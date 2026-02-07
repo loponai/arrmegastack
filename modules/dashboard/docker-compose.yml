@@ -1,0 +1,69 @@
+# ==========================================
+# MEGASTACK - Dashboard Module
+# MegaStack Web Dashboard for module management
+# Always active
+# ==========================================
+
+x-megastack:
+  id: dashboard
+  title: "MegaStack Dashboard"
+  tagline: "Your server's control panel"
+  description: "The web interface you're using right now. Manage modules, view logs, configure settings, create backups — all from your browser."
+  icon: "zap"
+  category: "system"
+  required: true
+  ram: "~80MB"
+  services:
+    megastack-dashboard:
+      friendly_name: "MegaStack Dashboard"
+      description: "Web management interface for your entire server"
+      port_map: 8443
+      tip: "This is the main dashboard — you're already here!"
+
+services:
+  megastack-dashboard:
+    build: ${MS_ROOT:-/opt/megastack}/dashboard
+    image: megastack/dashboard:latest
+    container_name: ms-dashboard
+    ports:
+      - "127.0.0.1:8443:8443"  # Localhost only - access via reverse proxy
+    environment:
+      - MS_ROOT=/app
+      - MS_ADMIN_PASSWORD_HASH=${MS_ADMIN_PASSWORD_HASH}
+      - MS_SESSION_SECRET=${MS_SESSION_SECRET}
+      - MS_BACKUP_KEY=${MS_BACKUP_KEY:-}
+      - MS_DOMAIN=${MS_DOMAIN:-localhost}
+      - TZ=${TZ:-UTC}
+      - NODE_ENV=production
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${MS_ROOT:-/opt/megastack}/.env:/app/.env
+      - ${MS_ROOT:-/opt/megastack}/state:/app/state
+      - ${MS_ROOT:-/opt/megastack}/modules:/app/modules:ro
+      - ${MS_ROOT:-/opt/megastack}/backups:/app/backups
+      - ${MS_ROOT:-/opt/megastack}/megastack:/app/megastack:ro
+    networks:
+      - ms_proxy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8443/api/auth/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+networks:
+  ms_proxy:
+    external: true

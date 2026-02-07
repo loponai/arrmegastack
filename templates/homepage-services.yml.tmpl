@@ -1,0 +1,59 @@
+# ==========================================
+# Homepage Services Configuration
+# Auto-generated based on active MegaStack modules
+# ==========================================
+
+---
+# Core Services
+- Core:
+    - Nginx Proxy Manager:
+        icon: nginx-proxy-manager.png
+        href: "http://{{MS_DOMAIN}}:81"
+        description: Reverse Proxy & SSL
+        server: my-docker
+        container: ms-npm
+    - Portainer:
+        icon: portainer.png
+        href: "http://{{MS_DOMAIN}}:9000"
+        description: Container Management
+        server: my-docker
+        container: ms-portainer
+    - MegaStack Dashboard:
+        icon: home-assistant.png
+        href: "http://{{MS_DOMAIN}}:8443"
+        description: MegaStack Management
+        server: my-docker
+        container: ms-dashboard
+
+# Media Services
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: "http://{{MS_DOMAIN}}:8096"
+        description: Media Server
+        server: my-docker
+        container: ms-jellyfin
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: "http://{{MS_DOMAIN}}:8080"
+        description: Torrent Client (VPN Protected)
+        server: my-docker
+        container: ms-qbittorrent
+    - Sonarr:
+        icon: sonarr.png
+        href: "http://{{MS_DOMAIN}}:8989"
+        description: TV Show Management
+        server: my-docker
+        container: ms-sonarr
+    - Radarr:
+        icon: radarr.png
+        href: "http://{{MS_DOMAIN}}:7878"
+        description: Movie Management
+        server: my-docker
+        container: ms-radarr
+    - Prowlarr:
+        icon: prowlarr.png
+        href: "http://{{MS_DOMAIN}}:8181"
+        description: Indexer Manager
+        server: my-docker
+        container: ms-prowlarr

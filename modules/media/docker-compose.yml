@@ -1,0 +1,421 @@
+# ==========================================
+# MEGASTACK - Media Module
+# Full ARR Stack: Gluetun VPN + qBittorrent + Prowlarr + Sonarr + Radarr + Jellyfin
+# Optional: Lidarr, SABnzbd, FlareSolverr, Notifiarr (via profiles)
+#
+# Based on Tom Spark's Privacy Box
+# VPN Options:
+#   NordVPN:   nordvpn.tomspark.tech   (4 extra months FREE!)
+#   ProtonVPN: protonvpn.tomspark.tech (3 months FREE!)
+#   Surfshark: surfshark.tomspark.tech (3 extra months FREE!)
+# ==========================================
+
+x-megastack:
+  id: media
+  title: "Media Center"
+  tagline: "Your private Netflix + auto-downloads"
+  description: "A complete private streaming setup: automatically find and download movies, TV shows, and music through a VPN-protected tunnel, then stream them to any device with Jellyfin. All download traffic is routed through your VPN — if the VPN drops, downloads stop."
+  icon: "film"
+  category: "media"
+  required: false
+  ram: "~1.5GB"
+  tips:
+    before_install: "You NEED an active VPN subscription. Get one through Tom's links for a discount: nordvpn.tomspark.tech / protonvpn.tomspark.tech / surfshark.tomspark.tech"
+  services:
+    gluetun:
+      friendly_name: "VPN Tunnel"
+      description: "Routes all download traffic through your VPN provider with a kill switch"
+      port_map: null
+      tip: "Runs in the background. If it stops (turns red), your media services won't work."
+    qbittorrent:
+      friendly_name: "qBittorrent"
+      description: "Download client routed through the VPN tunnel"
+      port_map: 8080
+      tip: "Don't change the network settings — they're configured to use the VPN automatically"
+    prowlarr:
+      friendly_name: "Prowlarr"
+      description: "Manages search sources (indexers) for Sonarr and Radarr"
+      port_map: 8181
+      tip: "Add your indexers here — they'll sync to Sonarr and Radarr automatically"
+    sonarr:
+      friendly_name: "Sonarr"
+      description: "Automatically finds, downloads, and organizes TV shows"
+      port_map: 8989
+      tip: "Search for a show, set quality preferences, and Sonarr handles the rest"
+    radarr:
+      friendly_name: "Radarr"
+      description: "Automatically finds, downloads, and organizes movies"
+      port_map: 7878
+      tip: "Add movies to your wishlist and they appear in Jellyfin when ready"
+    jellyfin:
+      friendly_name: "Jellyfin"
+      description: "Private media server — stream movies, TV, and music to any device"
+      port_map: 8096
+      tip: "Install the Jellyfin app on your phone/TV for the best experience"
+    lidarr:
+      friendly_name: "Lidarr"
+      description: "Automatically finds and downloads music albums"
+      port_map: 8686
+      optional: true
+    sabnzbd:
+      friendly_name: "SABnzbd"
+      description: "Usenet download client (requires Usenet provider subscription)"
+      port_map: 8085
+      optional: true
+    flaresolverr:
+      friendly_name: "FlareSolverr"
+      description: "Helps access Cloudflare-protected search sites"
+      port_map: 8191
+      optional: true
+    notifiarr:
+      friendly_name: "Notifiarr"
+      description: "Sends notifications from media apps to Discord, Slack, etc."
+      port_map: 5454
+      optional: true
+
+networks:
+  ms_proxy:
+    external: true
+  ms_media:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.4.0/24
+  ms_media_internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.5.0/24
+
+services:
+  # --- Gluetun VPN ---
+  # VPN container - all torrent traffic routes through this
+  gluetun:
+    image: qmcgaw/gluetun:v3
+    container_name: ms-gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "127.0.0.1:8080:8080"   # qBittorrent (localhost only)
+      - "127.0.0.1:8181:9696"   # Prowlarr (localhost only)
+      - "127.0.0.1:8989:8989"   # Sonarr (localhost only)
+      - "127.0.0.1:7878:7878"   # Radarr (localhost only)
+      - "127.0.0.1:8686:8686"   # Lidarr (localhost only)
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-nordvpn}
+      - VPN_TYPE=${VPN_TYPE:-openvpn}
+      - OPENVPN_USER=${VPN_USER:-}
+      - OPENVPN_PASSWORD=${VPN_PASSWORD:-}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY:-}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES:-}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-United States}
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/gluetun:/gluetun
+    networks:
+      - ms_media
+      - ms_media_internal
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "https://ipinfo.io"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- qBittorrent ---
+  # Torrent client (routed through Gluetun VPN)
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:5.0.4
+    container_name: ms-qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/qbittorrent:/config
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/downloads:/data/downloads
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.00'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- Prowlarr ---
+  # Indexer manager for Sonarr/Radarr/Lidarr
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:1.28.2
+    container_name: ms-prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/prowlarr:/config
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- Sonarr ---
+  # TV show management and automation
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:4.0.11
+    container_name: ms-sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/sonarr:/config
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}:/data/media
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/downloads:/data/downloads
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- Radarr ---
+  # Movie management and automation
+  radarr:
+    image: lscr.io/linuxserver/radarr:5.16.3
+    container_name: ms-radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/radarr:/config
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}:/data/media
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/downloads:/data/downloads
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- Jellyfin ---
+  # Media server (direct network access, no VPN needed)
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:10.10.6
+    container_name: ms-jellyfin
+    ports:
+      - "127.0.0.1:8096:8096"  # Localhost only - access via reverse proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/jellyfin:/config
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/tv:/data/tvshows
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/movies:/data/movies
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/music:/data/music
+    networks:
+      - ms_media
+      - ms_proxy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.00'
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- Lidarr (Optional) ---
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:2.8.2
+    container_name: ms-lidarr
+    profiles:
+      - lidarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/lidarr:/config
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}:/data/media
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/downloads:/data/downloads
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- SABnzbd (Optional) ---
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:4.4.1
+    container_name: ms-sabnzbd
+    profiles:
+      - sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-UTC}
+    ports:
+      - "127.0.0.1:8085:8080"  # Localhost only
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/sabnzbd:/config
+      - ${MEDIA_ROOT:-/opt/megastack/modules/media/media}/downloads:/data/downloads
+    networks:
+      - ms_media
+      - ms_proxy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- FlareSolverr (Optional) ---
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3
+    container_name: ms-flaresolverr
+    profiles:
+      - flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ:-UTC}
+    ports:
+      - "127.0.0.1:8191:8191"  # Localhost only
+    networks:
+      - ms_media_internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.00'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # --- Notifiarr (Optional) ---
+  notifiarr:
+    image: golift/notifiarr:0.8.3
+    container_name: ms-notifiarr
+    hostname: notifiarr
+    profiles:
+      - notifications
+    environment:
+      - DN_API_KEY=${NOTIFIARR_API_KEY:-}
+      - TZ=${TZ:-UTC}
+    ports:
+      - "127.0.0.1:5454:5454"  # Localhost only
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/media/config/notifiarr:/config
+      - /var/run/utmp:/var/run/utmp:ro
+    networks:
+      - ms_media
+      - ms_proxy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.50'
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
