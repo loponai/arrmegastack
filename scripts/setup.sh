@@ -160,6 +160,89 @@ MS_ADMIN_PASSWORD_HASH=$(hash_password "${ADMIN_PASSWORD}")
 MS_SESSION_SECRET=$(gen_secret)
 MS_BACKUP_KEY=$(gen_secret)
 
+# --- Module Selection ---
+
+log_info "Selecting optional modules..."
+
+SELECTED_MODULES=$(tui_checklist "Choose Your Features" \
+    "Pick which optional features you want on your server.
+Core, Dashboard, and Media are always enabled." \
+    "privacy"    "Block ads + store passwords + protect logins"         "ON" \
+    "cloud"      "Private file sync (like Google Drive, but yours)"    "OFF" \
+    "monitoring" "Get alerts if a service goes down"                    "ON" \
+    "vpn"        "Access your server securely from anywhere"           "OFF" \
+    "files"      "Web-based file manager (browse/upload via browser)"  "OFF")
+
+# Clean up whiptail output (removes quotes)
+SELECTED_MODULES=$(echo "${SELECTED_MODULES}" | tr -d '"')
+
+# --- Module-specific Configuration ---
+
+# Privacy settings
+PIHOLE_PASSWORD=""
+VAULTWARDEN_ADMIN_TOKEN=""
+AUTHELIA_JWT_SECRET=""
+AUTHELIA_SESSION_SECRET=""
+AUTHELIA_STORAGE_ENCRYPTION_KEY=""
+
+if echo "${SELECTED_MODULES}" | grep -q "privacy"; then
+    log_info "Configuring privacy module..."
+
+    PIHOLE_PASSWORD=$(tui_password "Pi-hole Password" "Set a password for the Pi-hole ad-blocker admin panel (leave blank to auto-generate):")
+    if [[ -z "${PIHOLE_PASSWORD}" ]]; then
+        PIHOLE_PASSWORD=$(gen_password)
+    fi
+
+    VAULTWARDEN_ADMIN_TOKEN=$(gen_secret)
+    AUTHELIA_JWT_SECRET=$(gen_secret)
+    AUTHELIA_SESSION_SECRET=$(gen_secret)
+    AUTHELIA_STORAGE_ENCRYPTION_KEY=$(gen_secret)
+
+    # Generate Authelia configuration
+    if [[ -f "${MS_ROOT}/templates/authelia-config.yml.tmpl" ]]; then
+        mkdir -p "${MS_ROOT}/modules/privacy/config/authelia"
+        sed \
+            -e "s|{{MS_DOMAIN}}|${MS_DOMAIN}|g" \
+            -e "s|{{AUTHELIA_JWT_SECRET}}|${AUTHELIA_JWT_SECRET}|g" \
+            -e "s|{{AUTHELIA_SESSION_SECRET}}|${AUTHELIA_SESSION_SECRET}|g" \
+            -e "s|{{AUTHELIA_STORAGE_ENCRYPTION_KEY}}|${AUTHELIA_STORAGE_ENCRYPTION_KEY}|g" \
+            "${MS_ROOT}/templates/authelia-config.yml.tmpl" \
+            > "${MS_ROOT}/modules/privacy/config/authelia/configuration.yml"
+        log_ok "Authelia configuration generated."
+    fi
+fi
+
+# Cloud settings
+NEXTCLOUD_DB_ROOT_PASSWORD=""
+NEXTCLOUD_DB_PASSWORD=""
+
+if echo "${SELECTED_MODULES}" | grep -q "cloud"; then
+    log_info "Configuring cloud module..."
+    NEXTCLOUD_DB_ROOT_PASSWORD=$(gen_secret)
+    NEXTCLOUD_DB_PASSWORD=$(gen_secret)
+    log_ok "Nextcloud database passwords auto-generated."
+fi
+
+# WireGuard VPN Access settings
+WG_PASSWORD=""
+WG_PASSWORD_HASH=""
+
+if echo "${SELECTED_MODULES}" | grep -q "vpn"; then
+    log_info "Configuring VPN access module..."
+
+    WG_PASSWORD=$(tui_password "WireGuard UI Password" "Set a password for the WireGuard VPN management panel (leave blank to auto-generate):")
+    if [[ -z "${WG_PASSWORD}" ]]; then
+        WG_PASSWORD=$(gen_password)
+    fi
+    # Generate bcrypt hash for wg-easy
+    if command -v docker &>/dev/null; then
+        WG_PASSWORD_HASH=$(docker run --rm ghcr.io/wg-easy/wg-easy wgpw "${WG_PASSWORD}" 2>/dev/null | tail -1 || echo "${WG_PASSWORD}")
+    else
+        WG_PASSWORD_HASH="${WG_PASSWORD}"
+        log_warn "Docker not available to generate bcrypt hash for wg-easy. Password stored as plaintext."
+    fi
+fi
+
 # --- Write modules.conf ---
 
 mkdir -p "${MS_ROOT}/state"
@@ -167,9 +250,12 @@ mkdir -p "${MS_ROOT}/state"
     echo "core"
     echo "dashboard"
     echo "media"
+    for module in ${SELECTED_MODULES}; do
+        echo "${module}"
+    done
 } > "${MS_ROOT}/state/modules.conf"
 
-log_ok "Modules configured: core dashboard media"
+log_ok "Modules configured: core dashboard media ${SELECTED_MODULES}"
 
 # --- Generate .env ---
 
@@ -203,6 +289,21 @@ WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
 SERVER_COUNTRIES=${SERVER_COUNTRIES}
 MEDIA_ROOT=${MEDIA_ROOT}
 
+# --- PRIVACY MODULE ---
+PIHOLE_PASSWORD=${PIHOLE_PASSWORD}
+VAULTWARDEN_ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+VAULTWARDEN_DOMAIN=https://vault.${MS_DOMAIN}
+AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET}
+AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
+AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+
+# --- CLOUD MODULE ---
+NEXTCLOUD_DB_ROOT_PASSWORD=${NEXTCLOUD_DB_ROOT_PASSWORD}
+NEXTCLOUD_DB_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+
+# --- VPN ACCESS MODULE ---
+WG_PASSWORD_HASH=${WG_PASSWORD_HASH}
+
 # --- OPTIONAL ---
 NOTIFIARR_API_KEY=
 ENVEOF
@@ -223,6 +324,16 @@ CREDS_FILE="${MS_ROOT}/state/initial-credentials.txt"
     echo "Dashboard: https://${MS_DOMAIN}"
     echo "Password:  ${ADMIN_PASSWORD}"
     echo ""
+    if echo "${SELECTED_MODULES}" | grep -q "privacy"; then
+        echo "Pi-hole Admin: https://pihole.${MS_DOMAIN}/admin"
+        echo "Password: ${PIHOLE_PASSWORD}"
+        echo ""
+    fi
+    if echo "${SELECTED_MODULES}" | grep -q "vpn"; then
+        echo "WireGuard VPN UI: https://vpn.${MS_DOMAIN}"
+        echo "Password: ${WG_PASSWORD}"
+        echo ""
+    fi
 } > "${CREDS_FILE}"
 chmod 600 "${CREDS_FILE}"
 
@@ -269,4 +380,4 @@ echo ""
 
 # Log install
 mkdir -p "${MS_ROOT}/state"
-echo "[$(date)] Setup completed. Modules: core dashboard media" >> "${MS_ROOT}/state/install.log"
+echo "[$(date)] Setup completed. Modules: core dashboard media ${SELECTED_MODULES}" >> "${MS_ROOT}/state/install.log"

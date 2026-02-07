@@ -157,10 +157,11 @@ if command -v ufw &>/dev/null; then
     # Web traffic (HTTP/HTTPS via Nginx Proxy Manager)
     ufw allow 80/tcp comment "HTTP" > /dev/null 2>&1
     ufw allow 443/tcp comment "HTTPS" > /dev/null 2>&1
+    ufw allow 51820/udp comment "WireGuard VPN" > /dev/null 2>&1
     # Enable firewall (non-interactive)
     echo "y" | ufw enable > /dev/null 2>&1
     ufw reload > /dev/null 2>&1
-    log_ok "Firewall configured: SSH (22), HTTP (80), HTTPS (443)"
+    log_ok "Firewall configured: SSH (22), HTTP (80), HTTPS (443), WireGuard (51820/udp)"
 else
     log_info "Installing UFW firewall..."
     apt-get install -y -qq ufw > /dev/null 2>&1
@@ -170,11 +171,12 @@ else
         ufw allow 22/tcp comment "SSH" > /dev/null 2>&1
         ufw allow 80/tcp comment "HTTP" > /dev/null 2>&1
         ufw allow 443/tcp comment "HTTPS" > /dev/null 2>&1
+        ufw allow 51820/udp comment "WireGuard VPN" > /dev/null 2>&1
         echo "y" | ufw enable > /dev/null 2>&1
-        log_ok "Firewall installed and configured: SSH (22), HTTP (80), HTTPS (443)"
+        log_ok "Firewall installed and configured: SSH (22), HTTP (80), HTTPS (443), WireGuard (51820/udp)"
     else
         log_warn "Could not install UFW. Please configure your firewall manually."
-        log_warn "Only ports 22, 80, and 443 should be open."
+        log_warn "Ports needed: 22 (SSH), 80 (HTTP), 443 (HTTPS), 51820/udp (WireGuard)"
     fi
 fi
 

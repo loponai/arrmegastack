@@ -58,6 +58,33 @@
     'ms-notifiarr':    { emoji: '\uD83D\uDD14', color: '#ff375f', bg: 'rgba(255,55,95,0.12)',   name: 'Notifiarr',      port: 5454,
       desc: 'Sends notifications from Sonarr, Radarr, and other apps to Discord, Slack, etc.',
       tip: 'Get a ping when a new episode downloads or when something needs attention.' },
+    'ms-pihole':       { emoji: '\uD83D\uDEE1\uFE0F', color: '#96060a', bg: 'rgba(150,6,10,0.12)',   name: 'Pi-hole',        port: 8053,
+      desc: 'Network-wide ad and tracker blocker. All devices on your network get automatic ad blocking.',
+      tip: 'Check the Pi-hole dashboard to see how many ads were blocked today.' },
+    'ms-vaultwarden':  { emoji: '\uD83D\uDD10', color: '#175ddc', bg: 'rgba(23,93,220,0.12)',  name: 'Vaultwarden',    port: 8222,
+      desc: 'Private password manager compatible with all Bitwarden apps and browser extensions.',
+      tip: 'Install the Bitwarden browser extension and point it at your server.' },
+    'ms-authelia':     { emoji: '\uD83D\uDD11', color: '#1a3867', bg: 'rgba(26,56,103,0.12)',  name: 'Authelia',       port: 9091,
+      desc: 'SSO and two-factor authentication portal. Protect your services with 2FA.',
+      tip: 'Set up 2FA with an authenticator app for maximum security.' },
+    'ms-nextcloud':    { emoji: '\u2601\uFE0F', color: '#0082c9', bg: 'rgba(0,130,201,0.12)',  name: 'Nextcloud',      port: 8444, https: true,
+      desc: 'File sync, sharing, calendar, contacts, and collaboration. Your own private Google Drive.',
+      tip: 'Install the Nextcloud app on your phone and computer for automatic sync.' },
+    'ms-nextcloud-db': { emoji: '\uD83D\uDDC4\uFE0F', color: '#c0765a', bg: 'rgba(192,118,90,0.12)',  name: 'MariaDB',        port: null,
+      desc: 'Database backend for Nextcloud. Runs in the background.',
+      tip: 'Runs in the background. If it stops, Nextcloud will stop working.' },
+    'ms-nextcloud-redis': { emoji: '\u26A1', color: '#dc382d', bg: 'rgba(220,56,45,0.12)',  name: 'Redis Cache',    port: null,
+      desc: 'Speed booster for Nextcloud. Keeps frequently accessed data in memory.',
+      tip: 'Keeps frequently accessed data in memory for faster performance.' },
+    'ms-uptime-kuma':  { emoji: '\uD83D\uDCCA', color: '#5cdd8b', bg: 'rgba(92,221,139,0.12)',  name: 'Uptime Kuma',    port: 3001,
+      desc: 'Beautiful uptime monitoring with notifications via Telegram, Discord, email, and 90+ services.',
+      tip: 'Set up a Telegram or Discord webhook to get notified when services have problems.' },
+    'ms-wg-easy':      { emoji: '\uD83C\uDF10', color: '#88171a', bg: 'rgba(136,23,26,0.12)',  name: 'WireGuard',      port: 51821,
+      desc: 'Fast, modern VPN with simple QR-code-based client setup. Access your server from anywhere.',
+      tip: 'Create a client config, scan the QR code with the WireGuard app, and you\'re connected.' },
+    'ms-filebrowser':  { emoji: '\uD83D\uDCC1', color: '#40a5ed', bg: 'rgba(64,165,237,0.12)',  name: 'File Browser',   port: 8086,
+      desc: 'Web-based file manager. Browse, upload, download, and organize files without SSH.',
+      tip: 'Default login is admin/admin \u2014 change the password immediately after first login.' },
   };
 
   const MODULE_META = {
@@ -67,10 +94,20 @@
       desc: 'This dashboard! The web interface you\'re using right now to manage your server.' },
     media:      { emoji: '\uD83C\uDF7F', color: '#ff9f0a', bg: 'rgba(255,159,10,0.12)',  friendly: 'Media Center',
       desc: 'A complete private streaming setup: automatically find and download movies and TV shows through a VPN-protected tunnel, then stream them to any device.' },
+    privacy:    { emoji: '\uD83D\uDEE1\uFE0F', color: '#96060a', bg: 'rgba(150,6,10,0.12)',   friendly: 'Privacy & Security',
+      desc: 'Block ads and trackers (Pi-hole), store passwords securely (Vaultwarden), and add two-factor authentication (Authelia).' },
+    cloud:      { emoji: '\u2601\uFE0F', color: '#0082c9', bg: 'rgba(0,130,201,0.12)',  friendly: 'Cloud Storage',
+      desc: 'Sync files between your phone, laptop, and server. Share files with links. Includes calendar and contacts. Powered by Nextcloud.' },
+    monitoring: { emoji: '\uD83D\uDCCA', color: '#5cdd8b', bg: 'rgba(92,221,139,0.12)',  friendly: 'Monitoring',
+      desc: 'Keeps an eye on all your services 24/7 and sends alerts via Telegram, Discord, email, Slack, and 90+ other services.' },
+    vpn:        { emoji: '\uD83C\uDF10', color: '#88171a', bg: 'rgba(136,23,26,0.12)',  friendly: 'Remote Access VPN',
+      desc: 'Connect securely from anywhere using WireGuard VPN. Includes a web UI for managing clients \u2014 just scan a QR code.' },
+    files:      { emoji: '\uD83D\uDCC1', color: '#40a5ed', bg: 'rgba(64,165,237,0.12)',  friendly: 'File Browser',
+      desc: 'A clean web-based file manager. Browse, upload, download, and organize files without SSH or FTP.' },
   };
 
   // Critical containers that shouldn't be stopped casually
-  const CRITICAL_CONTAINERS = new Set(['ms-npm', 'ms-gluetun', 'ms-dashboard']);
+  const CRITICAL_CONTAINERS = new Set(['ms-npm', 'ms-gluetun', 'ms-dashboard', 'ms-pihole']);
 
   // --- API ---
 
@@ -389,9 +426,9 @@
           </div>
           <div class="running-actions">
             ${on
-              ? `<button class="btn-pill" onclick="sbAction('restart','${c.id}','${m.name}',${critical},this)" aria-label="Restart ${m.name}">Restart</button>
-                 <button class="btn-pill danger" onclick="sbAction('stop','${c.id}','${m.name}',${critical},this)" aria-label="Stop ${m.name}">Stop</button>`
-              : `<button class="btn-pill" onclick="sbAction('start','${c.id}','${m.name}',false,this)" aria-label="Start ${m.name}">Start</button>`
+              ? `<button class="btn-pill" onclick="msAction('restart','${c.id}','${m.name}',${critical},this)" aria-label="Restart ${m.name}">Restart</button>
+                 <button class="btn-pill danger" onclick="msAction('stop','${c.id}','${m.name}',${critical},this)" aria-label="Stop ${m.name}">Stop</button>`
+              : `<button class="btn-pill" onclick="msAction('start','${c.id}','${m.name}',false,this)" aria-label="Start ${m.name}">Start</button>`
             }
           </div>
         </div>`;
@@ -408,7 +445,7 @@
     });
   }
 
-  window.sbAction = async function (action, id, name, isCritical, btnEl) {
+  window.msAction = async function (action, id, name, isCritical, btnEl) {
     if (action === 'stop' && isCritical) {
       const ok = await confirm(
         `Stop ${name}?`,
@@ -446,6 +483,10 @@
   const CATEGORY_LABELS = {
     infrastructure: 'Infrastructure',
     media: 'Media & Downloads',
+    privacy: 'Privacy & Security',
+    productivity: 'Productivity',
+    network: 'Network',
+    tools: 'Tools',
     system: 'System',
     other: 'Other'
   };
@@ -476,7 +517,7 @@
             <div class="toggle-wrap">
               <label class="toggle">
                 <input type="checkbox" ${m.enabled ? 'checked' : ''} ${m.required ? 'disabled' : ''}
-                  onchange="sbToggle('${m.id}', this.checked, '${mm.friendly}')"
+                  onchange="msToggle('${m.id}', this.checked, '${mm.friendly}')"
                   aria-label="Toggle ${mm.friendly} ${m.required ? '(always on)' : ''}">
                 <span class="toggle-track"></span>
               </label>
@@ -497,9 +538,9 @@
     const categories = [...new Set(modules.map(m => m.category))];
     const filterBar = $('#store-filters');
     if (filterBar) {
-      filterBar.innerHTML = `<button class="store-filter ${currentStoreFilter === 'all' ? 'active' : ''}" onclick="sbStoreFilter('all')">All</button>` +
+      filterBar.innerHTML = `<button class="store-filter ${currentStoreFilter === 'all' ? 'active' : ''}" onclick="msStoreFilter('all')">All</button>` +
         categories.map(cat =>
-          `<button class="store-filter ${currentStoreFilter === cat ? 'active' : ''}" onclick="sbStoreFilter('${cat}')">${CATEGORY_LABELS[cat] || cat}</button>`
+          `<button class="store-filter ${currentStoreFilter === cat ? 'active' : ''}" onclick="msStoreFilter('${cat}')">${CATEGORY_LABELS[cat] || cat}</button>`
         ).join('');
     }
 
@@ -518,7 +559,7 @@
             <div class="toggle-wrap">
               <label class="toggle">
                 <input type="checkbox" ${m.enabled ? 'checked' : ''} ${m.required ? 'disabled' : ''}
-                  onchange="sbToggle('${m.id}', this.checked, '${escapedName}')"
+                  onchange="msToggle('${m.id}', this.checked, '${escapedName}')"
                   aria-label="Toggle ${m.name} ${m.required ? '(always on)' : ''}">
                 <span class="toggle-track"></span>
               </label>
@@ -557,12 +598,12 @@
     }
   }
 
-  window.sbStoreFilter = function (cat) {
+  window.msStoreFilter = function (cat) {
     currentStoreFilter = cat;
     loadApps();
   };
 
-  window.sbToggle = async function (id, on, friendlyName) {
+  window.msToggle = async function (id, on, friendlyName) {
     if (!on) {
       const ok = await confirm(
         `Disable ${friendlyName}?`,
@@ -629,28 +670,48 @@
     VPN_PASSWORD: 'Your VPN service password',
     SERVER_COUNTRIES: 'Preferred VPN server country',
     MEDIA_ROOT: 'Where media files are stored',
+    PIHOLE_PASSWORD: 'Password for the Pi-hole admin dashboard',
+    VAULTWARDEN_ADMIN_TOKEN: 'Admin token for Vaultwarden (keep this secret!)',
+    AUTHELIA_JWT_SECRET: 'JWT signing secret for Authelia SSO',
+    AUTHELIA_SESSION_SECRET: 'Session encryption secret for Authelia',
+    AUTHELIA_STORAGE_ENCRYPTION_KEY: 'Database encryption key for Authelia',
+    NEXTCLOUD_DB_PASSWORD: 'Nextcloud database password',
+    NEXTCLOUD_DB_ROOT_PASSWORD: 'MariaDB root password for Nextcloud',
+    WG_PASSWORD_HASH: 'Bcrypt hash of the WireGuard web UI password',
   };
 
   const DANGEROUS_KEYS = new Set([
-    'MS_ROOT'
+    'MS_ROOT',
+    'VAULTWARDEN_ADMIN_TOKEN',
+    'AUTHELIA_JWT_SECRET',
+    'AUTHELIA_SESSION_SECRET',
+    'AUTHELIA_STORAGE_ENCRYPTION_KEY'
   ]);
 
   function renderSettings(cfg) {
     const groups = {
       'General': ['TZ', 'MS_DOMAIN', 'MS_ROOT'],
       'VPN & Media': ['VPN_PROVIDER', 'VPN_TYPE', 'VPN_USER', 'VPN_PASSWORD', 'SERVER_COUNTRIES', 'MEDIA_ROOT'],
+      'Privacy': ['PIHOLE_PASSWORD', 'VAULTWARDEN_ADMIN_TOKEN', 'AUTHELIA_JWT_SECRET', 'AUTHELIA_SESSION_SECRET', 'AUTHELIA_STORAGE_ENCRYPTION_KEY'],
+      'Cloud': ['NEXTCLOUD_DB_PASSWORD', 'NEXTCLOUD_DB_ROOT_PASSWORD'],
+      'VPN Access': ['WG_PASSWORD_HASH'],
     };
 
     const FRIENDLY = {
       TZ: 'Timezone', MS_DOMAIN: 'Domain', MS_ROOT: 'Install Path',
       VPN_PROVIDER: 'VPN Provider', VPN_TYPE: 'Protocol', VPN_USER: 'VPN Username',
       VPN_PASSWORD: 'VPN Password', SERVER_COUNTRIES: 'Server Country', MEDIA_ROOT: 'Media Path',
+      PIHOLE_PASSWORD: 'Pi-hole Password', VAULTWARDEN_ADMIN_TOKEN: 'Vaultwarden Admin Token',
+      AUTHELIA_JWT_SECRET: 'Authelia JWT Secret', AUTHELIA_SESSION_SECRET: 'Authelia Session Secret',
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: 'Authelia Storage Key',
+      NEXTCLOUD_DB_PASSWORD: 'Nextcloud DB Password', NEXTCLOUD_DB_ROOT_PASSWORD: 'Nextcloud DB Root Password',
+      WG_PASSWORD_HASH: 'WireGuard UI Password Hash',
     };
 
     const isSecret = (k) => /PASSWORD|SECRET|TOKEN|KEY|HASH/.test(k);
 
     $('#settings-cards').innerHTML = Object.entries(groups).map(([title, keys]) => {
-      const isDangerousGroup = false;
+      const isDangerousGroup = title === 'Privacy';
       const rows = keys.filter(k => k in cfg).map(k => {
         const dangerous = DANGEROUS_KEYS.has(k);
         return `
@@ -756,7 +817,7 @@
     const banner = $('#onboarding-banner');
     if (!banner) return;
     banner.innerHTML = `
-      <button class="onboarding-dismiss" onclick="sbDismissOnboarding()" aria-label="Dismiss welcome guide">&times;</button>
+      <button class="onboarding-dismiss" onclick="msDismissOnboarding()" aria-label="Dismiss welcome guide">&times;</button>
       <h2>Welcome to your MegaStack server!</h2>
       <p>${isFirstRun ? 'Your password is set and you\'re all ready to go.' : 'Here\'s a quick guide to get you started.'}</p>
       <div class="onboarding-steps">
@@ -776,7 +837,7 @@
     banner.classList.remove('hidden');
   }
 
-  window.sbDismissOnboarding = function () {
+  window.msDismissOnboarding = function () {
     localStorage.setItem('ms-onboarding-dismissed', '1');
     const banner = $('#onboarding-banner');
     if (banner) banner.classList.add('hidden');

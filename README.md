@@ -1,6 +1,6 @@
 # MegaStack
 
-**Your complete self-hosted media server in one command.**
+**Your complete self-hosted media + privacy server in one command.**
 
 Created by **Tom Spark** | [youtube.com/@TomSparkReviews](https://youtube.com/@TomSparkReviews)
 
@@ -8,9 +8,9 @@ Created by **Tom Spark** | [youtube.com/@TomSparkReviews](https://youtube.com/@T
 
 ## What is MegaStack?
 
-MegaStack turns a basic server into a complete private media streaming platform. It bundles VPN-protected downloads, automatic media organization, and a private streaming server into one easy-to-manage system — all controlled from a web dashboard.
+MegaStack turns a basic server into a complete private media streaming platform with built-in privacy tools. It bundles VPN-protected downloads, automatic media organization, a private streaming server, ad blocking, password management, cloud storage, and more into one easy-to-manage system — all controlled from a web dashboard.
 
-Think of it like building your own private streaming platform: automatically find, download, and stream movies, TV shows, and music. All download traffic is routed through your VPN so your IP address is never exposed.
+Think of it like building your own private streaming platform and privacy-first home server: automatically find, download, and stream movies, TV shows, and music. Block ads across your network. Sync files between devices. Access everything securely from anywhere. All download traffic is routed through your VPN so your IP address is never exposed.
 
 **No experience needed.** If you can copy-paste one command, you can run MegaStack.
 
@@ -18,15 +18,20 @@ Think of it like building your own private streaming platform: automatically fin
 
 ## What You Get
 
-| Component | What It Does | Services Included | RAM |
-|-----------|-------------|-------------------|-----|
+| Module | What It Does | Services Included | RAM |
+|--------|-------------|-------------------|-----|
 | **Core** | The foundation — routes domains, manages containers, gives you a start page | Nginx Proxy Manager, Portainer, Homepage | ~300MB |
 | **Dashboard** | Web UI to manage everything from your browser | MegaStack Dashboard | ~80MB |
 | **Media** | VPN-protected downloads + private streaming to any device | Gluetun VPN, qBittorrent, Prowlarr, Sonarr, Radarr, Jellyfin | ~1.5GB |
+| **Privacy** *(optional)* | Block ads, store passwords, add 2FA to your services | Pi-hole, Vaultwarden, Authelia | ~250MB |
+| **Cloud** *(optional)* | Private file sync, calendar, and contacts (your own Google Drive) | Nextcloud, MariaDB, Redis | ~500MB |
+| **Monitoring** *(optional)* | Get alerts when something goes down | Uptime Kuma | ~80MB |
+| **VPN Access** *(optional)* | Access your server securely from anywhere | WireGuard (wg-easy) | ~30MB |
+| **Files** *(optional)* | Web-based file manager for your server | FileBrowser | ~30MB |
 
-**Optional add-ons** (via Docker profiles): Lidarr (music), SABnzbd (Usenet), FlareSolverr (indexer bypass), Notifiarr (notifications).
+**Optional media add-ons** (via Docker profiles): Lidarr (music), SABnzbd (Usenet), FlareSolverr (indexer bypass), Notifiarr (notifications).
 
-**Total idle: ~1.9GB** — runs great on a 4GB server with room to spare.
+**Total idle: ~2.4GB with everything** — runs great on a 4GB server with core + media, or an 8GB server with all modules.
 
 ---
 
@@ -34,7 +39,7 @@ Think of it like building your own private streaming platform: automatically fin
 
 - A **server** running **Ubuntu 22.04+** or **Debian 12+**
   - Minimum: 4GB RAM / 2 vCPU
-  - Recommended: **8GB RAM / 4 vCPU** (with optional add-ons)
+  - Recommended: **8GB RAM / 4 vCPU** (with all optional modules)
 - **Root or sudo access** to your server
 - An **SSH client** to connect (Terminal on Mac/Linux, Windows Terminal on Windows)
 - A **VPN subscription** (required — routes all download traffic through VPN)
@@ -76,6 +81,8 @@ The wizard walks you through:
 2. **Set your timezone** — e.g., `America/New_York`
 3. **VPN credentials** — Your NordVPN/ProtonVPN/Surfshark login
 4. **Dashboard password** — Password for the web dashboard
+5. **Choose modules** — Pick optional features (privacy, cloud, monitoring, VPN access, files)
+6. **Module settings** — Pi-hole password, WireGuard password, etc.
 
 All security keys are generated automatically.
 
@@ -115,6 +122,9 @@ Open `http://your-server-ip:8443` in your browser.
 
 - **General** — Timezone, domain
 - **VPN & Media** — Update VPN credentials and media paths
+- **Privacy** — Pi-hole, Vaultwarden, and Authelia secrets
+- **Cloud** — Nextcloud database credentials
+- **VPN Access** — WireGuard UI password hash
 - **Backups** — Create and download backups
 
 ---
@@ -190,6 +200,12 @@ Value: your-server-ip
 | Sonarr | `sonarr.yourdomain.com` | 8989 |
 | Radarr | `radarr.yourdomain.com` | 7878 |
 | Prowlarr | `prowlarr.yourdomain.com` | 8181 |
+| Vaultwarden | `vault.yourdomain.com` | 8222 |
+| Nextcloud | `cloud.yourdomain.com` | 8444 |
+| Pi-hole | `pihole.yourdomain.com` | 8053 |
+| Uptime Kuma | `status.yourdomain.com` | 3001 |
+| WireGuard | `vpn.yourdomain.com` | 51821 |
+| File Browser | `files.yourdomain.com` | 8086 |
 
 ---
 
@@ -256,7 +272,7 @@ megastack restart dashboard
                     ┌────────────────────────────────────┐
                     │     MegaStack Web Dashboard         │
                     │    (manage services, view logs,     │
-                    │     configure VPN, backups)         │
+                    │     toggle modules, backups)        │
                     │              :8443                   │
                     └──────────────┬─────────────────────┘
                                    │
@@ -266,18 +282,18 @@ megastack restart dashboard
                     │   (routes domains to services)     │
                     └──────────────┬────────────────────┘
                                    │
-                    ┌──────────────▼────────────────────┐
-                    │         Media Stack                 │
-                    │                                     │
-                    │  Gluetun VPN ─── Kill Switch        │
-                    │    ├── qBittorrent (downloads)      │
-                    │    ├── Prowlarr (indexers)           │
-                    │    ├── Sonarr (TV shows)             │
-                    │    ├── Radarr (movies)               │
-                    │    └── Lidarr (music) [optional]     │
-                    │                                     │
-                    │  Jellyfin ─── Stream to any device   │
-                    └─────────────────────────────────────┘
+          ┌────────────────────────┼────────────────────────┐
+          │                        │                        │
+  ┌───────▼───────┐   ┌───────────▼──────────┐   ┌────────▼────────┐
+  │  Media Stack   │   │  Privacy & Security   │   │ Optional Modules │
+  │                │   │                       │   │                  │
+  │  Gluetun VPN   │   │  Pi-hole (ad block)   │   │  Nextcloud       │
+  │  ├ qBittorrent │   │  Vaultwarden (pwds)   │   │  Uptime Kuma     │
+  │  ├ Prowlarr    │   │  Authelia (2FA/SSO)   │   │  WireGuard VPN   │
+  │  ├ Sonarr      │   │                       │   │  File Browser    │
+  │  ├ Radarr      │   └───────────────────────┘   │                  │
+  │  └ Jellyfin    │                                └──────────────────┘
+  └────────────────┘
 ```
 
 ---
@@ -305,7 +321,12 @@ megastack restart dashboard
 ├── modules/
 │   ├── core/                   # Nginx Proxy Manager + Portainer + Homepage
 │   ├── dashboard/              # MegaStack Web Dashboard
-│   └── media/                  # Full ARR stack + Jellyfin
+│   ├── media/                  # Full ARR stack + Jellyfin
+│   ├── privacy/                # Pi-hole + Vaultwarden + Authelia (optional)
+│   ├── cloud/                  # Nextcloud + MariaDB + Redis (optional)
+│   ├── monitoring/             # Uptime Kuma (optional)
+│   ├── vpn/                    # WireGuard remote access (optional)
+│   └── files/                  # FileBrowser (optional)
 ├── scripts/                    # Install and setup scripts
 ├── dashboard/                  # Dashboard web app source
 └── backups/                    # Encrypted backup archives
@@ -322,7 +343,7 @@ A: MegaStack is free and open source. You pay for the server (~$10-30/month), a 
 A: Any provider supported by [Gluetun](https://github.com/qdm12/gluetun-wiki). NordVPN, ProtonVPN, Surfshark, Mullvad, and many more.
 
 **Q: Can I add more services?**
-A: Lidarr, SABnzbd, FlareSolverr, and Notifiarr are available as optional profiles. More can be added via Docker Compose.
+A: MegaStack includes 5 optional modules (privacy, cloud, monitoring, VPN access, file browser) that you can toggle on or off. Media add-ons like Lidarr, SABnzbd, FlareSolverr, and Notifiarr are also available. More can be added via Docker Compose.
 
 **Q: Is this safe to run on the internet?**
 A: Yes. All services are behind localhost-only ports and only accessible through the reverse proxy. The VPN kill switch ensures no traffic leaks.
@@ -334,7 +355,7 @@ A: `megastack down && rm -rf /opt/megastack`.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+All Rights Reserved — see [LICENSE](LICENSE) for details. No copying, modification, or commercial use without written permission.
 
 ---
 

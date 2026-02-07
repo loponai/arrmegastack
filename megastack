@@ -19,7 +19,7 @@ MS_VERSION="1.0.0"
 # Core modules that are always active
 CORE_MODULES="core dashboard media"
 # All available optional modules
-AVAILABLE_MODULES=""
+AVAILABLE_MODULES="privacy cloud monitoring vpn files"
 
 # Colors
 RED='\033[0;31m'
@@ -173,6 +173,24 @@ cmd_modules() {
             media)     desc="Gluetun VPN + qBittorrent + Prowlarr + Sonarr + Radarr + Jellyfin" ;;
         esac
         echo -e "    ${GREEN}●${NC} ${BOLD}${module}${NC} - ${desc}"
+    done
+
+    echo ""
+    echo -e "  ${BOLD}Optional:${NC}"
+    for module in ${AVAILABLE_MODULES}; do
+        local desc=""
+        case "${module}" in
+            privacy)    desc="Pi-hole + Vaultwarden + Authelia (ads, passwords, 2FA)" ;;
+            cloud)      desc="Nextcloud + MariaDB + Redis (file sync, calendar)" ;;
+            monitoring) desc="Uptime Kuma (service monitoring & alerts)" ;;
+            vpn)        desc="WireGuard via wg-easy (remote access VPN)" ;;
+            files)      desc="FileBrowser (web-based file manager)" ;;
+        esac
+        if is_module_enabled "${module}"; then
+            echo -e "    ${GREEN}●${NC} ${BOLD}${module}${NC} - ${desc}"
+        else
+            echo -e "    ${RED}○${NC} ${module} - ${desc}"
+        fi
     done
 
     echo ""
@@ -406,6 +424,39 @@ cmd_urls() {
     echo "    Radarr:         http://${domain}:7878"
     echo "    Jellyfin:       http://${domain}:8096"
 
+    # Optional modules - only show if enabled
+    if is_module_enabled "privacy"; then
+        echo ""
+        echo -e "  ${BOLD}Privacy:${NC}"
+        echo "    Pi-hole:        http://${domain}:8053/admin"
+        echo "    Vaultwarden:    http://${domain}:8222"
+        echo "    Authelia:       http://${domain}:9091"
+    fi
+
+    if is_module_enabled "cloud"; then
+        echo ""
+        echo -e "  ${BOLD}Cloud:${NC}"
+        echo "    Nextcloud:      https://${domain}:8444"
+    fi
+
+    if is_module_enabled "monitoring"; then
+        echo ""
+        echo -e "  ${BOLD}Monitoring:${NC}"
+        echo "    Uptime Kuma:    http://${domain}:3001"
+    fi
+
+    if is_module_enabled "vpn"; then
+        echo ""
+        echo -e "  ${BOLD}VPN Access:${NC}"
+        echo "    WireGuard UI:   http://${domain}:51821"
+    fi
+
+    if is_module_enabled "files"; then
+        echo ""
+        echo -e "  ${BOLD}Files:${NC}"
+        echo "    File Browser:   http://${domain}:8086"
+    fi
+
     echo ""
 }
 
@@ -444,6 +495,11 @@ cmd_help() {
     echo "  core         Nginx Proxy Manager + Portainer + Homepage (always on)"
     echo "  dashboard    MegaStack Web Dashboard (always on)"
     echo "  media        Gluetun VPN + ARR stack + Jellyfin (always on)"
+    echo "  privacy      Pi-hole + Vaultwarden + Authelia (optional)"
+    echo "  cloud        Nextcloud + MariaDB + Redis (optional)"
+    echo "  monitoring   Uptime Kuma (optional)"
+    echo "  vpn          WireGuard remote access VPN (optional)"
+    echo "  files        FileBrowser web file manager (optional)"
     echo ""
 }
 

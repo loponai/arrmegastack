@@ -17,7 +17,7 @@ x-megastack:
   description: "A complete private streaming setup: automatically find and download movies, TV shows, and music through a VPN-protected tunnel, then stream them to any device with Jellyfin. All download traffic is routed through your VPN — if the VPN drops, downloads stop."
   icon: "film"
   category: "media"
-  required: false
+  required: true
   ram: "~1.5GB"
   tips:
     before_install: "You NEED an active VPN subscription. Get one through Tom's links for a discount: nordvpn.tomspark.tech / protonvpn.tomspark.tech / surfshark.tomspark.tech"

@@ -25,10 +25,50 @@ const MODULE_INFO = {
   media: {
     name: 'Media Center',
     description: 'A complete private streaming setup: automatically find and download movies and TV shows through a VPN-protected tunnel, then stream them to any device.',
-    services: ['ms-gluetun', 'ms-qbittorrent', 'ms-prowlarr', 'ms-sonarr', 'ms-radarr', 'ms-jellyfin'],
-    required: false,
+    services: ['ms-gluetun', 'ms-qbittorrent', 'ms-prowlarr', 'ms-sonarr', 'ms-radarr', 'ms-jellyfin', 'ms-lidarr', 'ms-sabnzbd', 'ms-flaresolverr', 'ms-notifiarr'],
+    required: true,
     icon: 'film',
     ram: '~1.5GB'
+  },
+  privacy: {
+    name: 'Privacy & Security',
+    description: 'Block ads and trackers across your entire network (Pi-hole), store passwords securely (Vaultwarden), and add two-factor authentication (Authelia).',
+    services: ['ms-pihole', 'ms-vaultwarden', 'ms-authelia'],
+    required: false,
+    icon: 'shield',
+    ram: '~250MB'
+  },
+  cloud: {
+    name: 'Cloud Storage',
+    description: 'Sync files between your phone, laptop, and server. Share files with links. Includes calendar and contacts too. Powered by Nextcloud.',
+    services: ['ms-nextcloud', 'ms-nextcloud-db', 'ms-nextcloud-redis'],
+    required: false,
+    icon: 'cloud',
+    ram: '~500MB'
+  },
+  monitoring: {
+    name: 'Monitoring',
+    description: 'Keeps an eye on all your services 24/7 and sends alerts via Telegram, Discord, email, Slack, and 90+ other notification services.',
+    services: ['ms-uptime-kuma'],
+    required: false,
+    icon: 'activity',
+    ram: '~80MB'
+  },
+  vpn: {
+    name: 'Remote Access VPN',
+    description: 'Connect securely to your server from anywhere using WireGuard VPN. Includes a web UI for managing clients — just scan a QR code.',
+    services: ['ms-wg-easy'],
+    required: false,
+    icon: 'globe',
+    ram: '~30MB'
+  },
+  files: {
+    name: 'File Browser',
+    description: 'A clean web-based file manager for your server. Browse, upload, download, and organize files without SSH or FTP.',
+    services: ['ms-filebrowser'],
+    required: false,
+    icon: 'folder',
+    ram: '~30MB'
   }
 };
 
