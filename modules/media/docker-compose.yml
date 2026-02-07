@@ -13,7 +13,7 @@
 x-megastack:
   id: media
   title: "Media Center"
-  tagline: "Your private Netflix + auto-downloads"
+  tagline: "Your private streaming server + auto-downloads"
   description: "A complete private streaming setup: automatically find and download movies, TV shows, and music through a VPN-protected tunnel, then stream them to any device with Jellyfin. All download traffic is routed through your VPN — if the VPN drops, downloads stop."
   icon: "film"
   category: "media"

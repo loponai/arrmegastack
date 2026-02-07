@@ -44,7 +44,7 @@
       desc: 'Automatically finds, downloads, and organizes movies.',
       tip: 'Like Sonarr, but for movies. Add movies to your wishlist and they appear in Jellyfin.' },
     'ms-jellyfin':     { emoji: '\uD83C\uDF7F', color: '#bf5af2', bg: 'rgba(191,90,242,0.12)',  name: 'Jellyfin',       port: 8096,
-      desc: 'Your private Netflix. Streams your movies, TV shows, and music to any device.',
+      desc: 'Your private streaming server. Streams your movies, TV shows, and music to any device.',
       tip: 'Install the Jellyfin app on your phone/TV for the best experience.' },
     'ms-lidarr':       { emoji: '\uD83C\uDFB5', color: '#30d158', bg: 'rgba(48,209,88,0.12)',   name: 'Lidarr',         port: 8686,
       desc: 'Automatically finds, downloads, and organizes music.',
@@ -66,7 +66,7 @@
     dashboard:  { emoji: '\u26A1', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', friendly: 'MegaStack Dashboard',
       desc: 'This dashboard! The web interface you\'re using right now to manage your server.' },
     media:      { emoji: '\uD83C\uDF7F', color: '#ff9f0a', bg: 'rgba(255,159,10,0.12)',  friendly: 'Media Center',
-      desc: 'A complete private Netflix setup: automatically find and download movies and TV shows through a VPN-protected tunnel, then stream them to any device.' },
+      desc: 'A complete private streaming setup: automatically find and download movies and TV shows through a VPN-protected tunnel, then stream them to any device.' },
   };
 
   // Critical containers that shouldn't be stopped casually

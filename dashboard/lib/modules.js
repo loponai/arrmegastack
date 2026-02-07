@@ -24,7 +24,7 @@ const MODULE_INFO = {
   },
   media: {
     name: 'Media Center',
-    description: 'A complete private Netflix setup: automatically find and download movies and TV shows through a VPN-protected tunnel, then stream them to any device.',
+    description: 'A complete private streaming setup: automatically find and download movies and TV shows through a VPN-protected tunnel, then stream them to any device.',
     services: ['ms-gluetun', 'ms-qbittorrent', 'ms-prowlarr', 'ms-sonarr', 'ms-radarr', 'ms-jellyfin'],
     required: false,
     icon: 'film',

@@ -10,7 +10,7 @@ Created by **Tom Spark** | [youtube.com/@TomSparkReviews](https://youtube.com/@T
 
 MegaStack turns a basic server into a complete private media streaming platform. It bundles VPN-protected downloads, automatic media organization, and a private streaming server into one easy-to-manage system — all controlled from a web dashboard.
 
-Think of it like building your own private Netflix: automatically find, download, and stream movies, TV shows, and music. All download traffic is routed through your VPN so your IP address is never exposed.
+Think of it like building your own private streaming platform: automatically find, download, and stream movies, TV shows, and music. All download traffic is routed through your VPN so your IP address is never exposed.
 
 **No experience needed.** If you can copy-paste one command, you can run MegaStack.
 
