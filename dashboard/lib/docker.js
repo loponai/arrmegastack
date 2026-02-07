@@ -145,11 +145,11 @@ async function streamLogs(containerId) {
 }
 
 // Pull latest images and recreate (uses megastack CLI)
-async function pullAndRecreate(sbRoot) {
+async function pullAndRecreate(msRoot) {
   return new Promise((resolve, reject) => {
-    const proc = spawn('bash', ['-c', `${sbRoot}/megastack update`], {
-      cwd: sbRoot,
-      env: { ...process.env, MS_ROOT: sbRoot }
+    const proc = spawn('bash', ['-c', `${msRoot}/megastack update`], {
+      cwd: msRoot,
+      env: { ...process.env, MS_ROOT: msRoot }
     });
     let output = '';
     proc.stdout.on('data', (data) => { output += data.toString(); });

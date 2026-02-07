@@ -32,8 +32,8 @@ const MODULE_INFO = {
   }
 };
 
-async function getEnabledModules(sbRoot) {
-  const confPath = path.join(sbRoot, 'state', 'modules.conf');
+async function getEnabledModules(msRoot) {
+  const confPath = path.join(msRoot, 'state', 'modules.conf');
   try {
     const content = await fs.readFile(confPath, 'utf8');
     return content.trim().split('\n').filter(Boolean);
@@ -42,8 +42,8 @@ async function getEnabledModules(sbRoot) {
   }
 }
 
-async function list(sbRoot) {
-  const enabled = await getEnabledModules(sbRoot);
+async function list(msRoot) {
+  const enabled = await getEnabledModules(msRoot);
 
   return Object.entries(MODULE_INFO).map(([key, info]) => ({
     id: key,
@@ -54,8 +54,8 @@ async function list(sbRoot) {
 }
 
 // Read x-megastack metadata from a module's docker-compose.yml
-async function readComposeMetadata(sbRoot, moduleId) {
-  const composePath = path.join(sbRoot, 'modules', moduleId, 'docker-compose.yml');
+async function readComposeMetadata(msRoot, moduleId) {
+  const composePath = path.join(msRoot, 'modules', moduleId, 'docker-compose.yml');
   try {
     const content = await fs.readFile(composePath, 'utf8');
     const doc = yaml.load(content);
@@ -74,13 +74,13 @@ function normalizeTips(tips) {
 }
 
 // List modules with rich x-megastack metadata merged in
-async function listRich(sbRoot) {
-  const enabled = await getEnabledModules(sbRoot);
-  const moduleDirs = await getAvailableModuleDirs(sbRoot);
+async function listRich(msRoot) {
+  const enabled = await getEnabledModules(msRoot);
+  const moduleDirs = await getAvailableModuleDirs(msRoot);
 
   const results = [];
   for (const moduleId of moduleDirs) {
-    const meta = await readComposeMetadata(sbRoot, moduleId);
+    const meta = await readComposeMetadata(msRoot, moduleId);
     const fallback = MODULE_INFO[moduleId];
 
     if (meta) {
@@ -126,8 +126,8 @@ async function listRich(sbRoot) {
 }
 
 // Discover all module directories (folders with docker-compose.yml)
-async function getAvailableModuleDirs(sbRoot) {
-  const modulesDir = path.join(sbRoot, 'modules');
+async function getAvailableModuleDirs(msRoot) {
+  const modulesDir = path.join(msRoot, 'modules');
   try {
     const entries = await fs.readdir(modulesDir, { withFileTypes: true });
     const dirs = [];
@@ -148,7 +148,7 @@ async function getAvailableModuleDirs(sbRoot) {
   }
 }
 
-async function enable(sbRoot, moduleName) {
+async function enable(msRoot, moduleName) {
   if (!MODULE_INFO[moduleName]) {
     throw new Error(`Unknown module: ${moduleName}`);
   }
@@ -156,28 +156,28 @@ async function enable(sbRoot, moduleName) {
     throw new Error(`${moduleName} is a core module and cannot be toggled`);
   }
 
-  const enabled = await getEnabledModules(sbRoot);
+  const enabled = await getEnabledModules(msRoot);
   if (enabled.includes(moduleName)) {
     return; // Already enabled
   }
 
   enabled.push(moduleName);
-  const confPath = path.join(sbRoot, 'state', 'modules.conf');
+  const confPath = path.join(msRoot, 'state', 'modules.conf');
   await fs.writeFile(confPath, enabled.join('\n') + '\n');
 
   // Start the module
-  await runMegastackCommand(sbRoot, ['up']);
+  await runMegastackCommand(msRoot, ['up']);
 }
 
-async function disable(sbRoot, moduleName) {
+async function disable(msRoot, moduleName) {
   if (CORE_MODULES.includes(moduleName)) {
     throw new Error(`Cannot disable core module: ${moduleName}`);
   }
 
-  const enabled = await getEnabledModules(sbRoot);
+  const enabled = await getEnabledModules(msRoot);
   const filtered = enabled.filter(m => m !== moduleName);
 
-  const confPath = path.join(sbRoot, 'state', 'modules.conf');
+  const confPath = path.join(msRoot, 'state', 'modules.conf');
   await fs.writeFile(confPath, filtered.join('\n') + '\n');
 
   // Stop the module containers
@@ -197,11 +197,11 @@ async function disable(sbRoot, moduleName) {
   }
 }
 
-function runMegastackCommand(sbRoot, args) {
+function runMegastackCommand(msRoot, args) {
   return new Promise((resolve, reject) => {
-    const proc = spawn('bash', [path.join(sbRoot, 'megastack'), ...args], {
-      cwd: sbRoot,
-      env: { ...process.env, MS_ROOT: sbRoot }
+    const proc = spawn('bash', [path.join(msRoot, 'megastack'), ...args], {
+      cwd: msRoot,
+      env: { ...process.env, MS_ROOT: msRoot }
     });
     let output = '';
     proc.stdout.on('data', (data) => { output += data.toString(); });

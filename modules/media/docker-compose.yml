@@ -3,7 +3,7 @@
 # Full ARR Stack: Gluetun VPN + qBittorrent + Prowlarr + Sonarr + Radarr + Jellyfin
 # Optional: Lidarr, SABnzbd, FlareSolverr, Notifiarr (via profiles)
 #
-# Based on Tom Spark's Privacy Box
+# Tom Spark's Self-Hosted Media Server
 # VPN Options:
 #   NordVPN:   nordvpn.tomspark.tech   (4 extra months FREE!)
 #   ProtonVPN: protonvpn.tomspark.tech (3 months FREE!)

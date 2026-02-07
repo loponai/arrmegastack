@@ -40,14 +40,14 @@ hash_password() {
     local password="$1"
     # Try Node.js first (bcryptjs is already installed in dashboard)
     if command -v node &>/dev/null && [[ -f "${MS_ROOT}/dashboard/node_modules/bcryptjs/index.js" ]]; then
-        SB_HASH_INPUT="$password" SB_BCRYPT_PATH="${MS_ROOT}/dashboard/node_modules/bcryptjs" \
-            node -e "const b=require(process.env.SB_BCRYPT_PATH);console.log(b.hashSync(process.env.SB_HASH_INPUT,12))"
+        MS_HASH_INPUT="$password" MS_BCRYPT_PATH="${MS_ROOT}/dashboard/node_modules/bcryptjs" \
+            node -e "const b=require(process.env.MS_BCRYPT_PATH);console.log(b.hashSync(process.env.MS_HASH_INPUT,12))"
         return
     fi
     # Fallback to Python bcrypt
     if python3 -c "import bcrypt" &>/dev/null; then
-        SB_HASH_INPUT="$password" \
-            python3 -c "import os,bcrypt;print(bcrypt.hashpw(os.environ['SB_HASH_INPUT'].encode(),bcrypt.gensalt(12)).decode())"
+        MS_HASH_INPUT="$password" \
+            python3 -c "import os,bcrypt;print(bcrypt.hashpw(os.environ['MS_HASH_INPUT'].encode(),bcrypt.gensalt(12)).decode())"
         return
     fi
     # Last resort: htpasswd (already safe - uses argument, not interpolation)

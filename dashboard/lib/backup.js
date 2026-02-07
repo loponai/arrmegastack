@@ -18,8 +18,8 @@ function deriveKey(secret) {
   return crypto.scryptSync(secret, 'megastack-backup-salt', KEY_LENGTH);
 }
 
-async function create(sbRoot, encrypt = true) {
-  const backupDir = path.join(sbRoot, 'backups');
+async function create(msRoot, encrypt = true) {
+  const backupDir = path.join(msRoot, 'backups');
   await fs.mkdir(backupDir, { recursive: true });
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
@@ -27,7 +27,7 @@ async function create(sbRoot, encrypt = true) {
   const tarPath = path.join(backupDir, tarFilename);
 
   execSync(
-    `tar -czf "${tarPath}" -C "${sbRoot}" state .env modules/*/config 2>/dev/null || true`,
+    `tar -czf "${tarPath}" -C "${msRoot}" state .env modules/*/config 2>/dev/null || true`,
     { timeout: 300000 }
   );
 
@@ -71,8 +71,8 @@ async function create(sbRoot, encrypt = true) {
   };
 }
 
-async function list(sbRoot) {
-  const backupDir = path.join(sbRoot, 'backups');
+async function list(msRoot) {
+  const backupDir = path.join(msRoot, 'backups');
   try {
     const files = await fs.readdir(backupDir);
     const backups = [];
@@ -94,7 +94,7 @@ async function list(sbRoot) {
   }
 }
 
-async function getPath(sbRoot, filename) {
+async function getPath(msRoot, filename) {
   // Sanitize filename to prevent path traversal
   const sanitized = path.basename(filename);
   if (!sanitized.startsWith('megastack-backup-')) {
@@ -103,13 +103,13 @@ async function getPath(sbRoot, filename) {
   if (!sanitized.endsWith('.tar.gz') && !sanitized.endsWith('.tar.gz.enc')) {
     throw new Error('Invalid backup filename');
   }
-  const filePath = path.join(sbRoot, 'backups', sanitized);
+  const filePath = path.join(msRoot, 'backups', sanitized);
   await fs.access(filePath);
   return filePath;
 }
 
 // Decrypt a backup for download (returns path to temp decrypted file)
-async function decrypt(sbRoot, filename) {
+async function decrypt(msRoot, filename) {
   const sanitized = path.basename(filename);
   if (!sanitized.endsWith('.tar.gz.enc')) {
     throw new Error('File is not encrypted');
@@ -118,7 +118,7 @@ async function decrypt(sbRoot, filename) {
   const secret = getBackupSecret();
   if (!secret) throw new Error('No decryption key available');
 
-  const encPath = path.join(sbRoot, 'backups', sanitized);
+  const encPath = path.join(msRoot, 'backups', sanitized);
   await fs.access(encPath);
 
   const data = await fs.readFile(encPath);
@@ -133,7 +133,7 @@ async function decrypt(sbRoot, filename) {
   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
   // Write to temp file
-  const tmpPath = path.join(sbRoot, 'backups', sanitized.replace('.enc', ''));
+  const tmpPath = path.join(msRoot, 'backups', sanitized.replace('.enc', ''));
   await fs.writeFile(tmpPath, decrypted);
 
   // Schedule cleanup after 60 seconds

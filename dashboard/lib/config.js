@@ -2,8 +2,8 @@ const fs = require('fs').promises;
 const path = require('path');
 
 // Read .env file into key-value object
-async function read(sbRoot) {
-  const envPath = path.join(sbRoot, '.env');
+async function read(msRoot) {
+  const envPath = path.join(msRoot, '.env');
   try {
     const content = await fs.readFile(envPath, 'utf8');
     const config = {};
@@ -23,8 +23,8 @@ async function read(sbRoot) {
 }
 
 // Update specific keys in .env file
-async function update(sbRoot, updates) {
-  const envPath = path.join(sbRoot, '.env');
+async function update(msRoot, updates) {
+  const envPath = path.join(msRoot, '.env');
   let content;
 
   try {
