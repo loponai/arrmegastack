@@ -37,7 +37,7 @@ Think of it like building your own private streaming platform and privacy-first 
 
 ## What You Need
 
-- A **server** running **Ubuntu 22.04+** or **Debian 12+**
+- A **server running Ubuntu 22.04+ or Debian 12+** — this can be a VPS, a spare PC, a NUC, or any always-on machine
   - Minimum: 4GB RAM / 2 vCPU
   - Recommended: **8GB RAM / 4 vCPU** (with all optional modules)
 - **Root or sudo access** to your server
@@ -209,6 +209,55 @@ Value: your-server-ip
 
 ---
 
+## Remote Access with Tailscale (Recommended)
+
+Tailscale is the easiest way to access your MegaStack from anywhere. Stream Jellyfin on your phone, check Sonarr from work, or share your media server with friends and family -- all without port forwarding, dynamic DNS, or firewall rules.
+
+### Step 1: Enable the Tailscale Module
+
+```bash
+megastack enable tailscale
+```
+
+### Step 2: Get an Auth Key
+
+1. Go to [https://login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys)
+2. Create a new auth key (reusable is recommended so the container reconnects after restarts)
+3. Copy the key
+
+### Step 3: Configure and Start
+
+Set your auth key in the MegaStack environment:
+
+```bash
+# Add to /opt/megastack/.env
+TS_AUTHKEY=tskey-auth-xxxxx
+```
+
+Then bring everything up:
+
+```bash
+megastack up
+```
+
+All your services are now accessible at your Tailscale IP (e.g., `http://100.x.x.x:8096` for Jellyfin).
+
+### Sharing with Friends and Family
+
+Tailscale makes it easy to share your media server:
+
+- **Node sharing** — Share your MegaStack node with other Tailscale users. They install Tailscale on their device, you share the node, and they can stream from Jellyfin as if they were on your local network.
+- **Tailscale Funnel** — Expose Jellyfin publicly with a free HTTPS URL. No domain or SSL certificates needed.
+- **Tailscale Serve** — Proxy services over HTTPS on your tailnet with automatic TLS certificates.
+
+### Why Tailscale?
+
+This eliminates the need for a VPS, domain name, SSL certificates, or Nginx Proxy Manager for personal use. Run MegaStack on any machine at home and access everything securely from anywhere. No port forwarding needed.
+
+> **Note:** The WireGuard module is still available for users who prefer a self-managed VPN. Tailscale is for remote access to your services -- your VPN provider (NordVPN, ProtonVPN, etc.) is still used by Gluetun to protect your download traffic.
+
+---
+
 ## Backups
 
 ### From the Dashboard
@@ -337,7 +386,7 @@ megastack restart dashboard
 ## FAQ
 
 **Q: How much does this cost?**
-A: MegaStack is free and open source. You pay for the server (~$10-30/month), a VPN subscription (~$3-5/month), and optionally a domain (~$10/year).
+A: MegaStack is free and open source. If you run it on your own hardware with Tailscale for remote access, the only recurring cost is a VPN subscription for download privacy (~$3-5/month). If you prefer a VPS, that's typically ~$10-30/month on top. A domain is optional (~$10/year).
 
 **Q: Which VPN providers work?**
 A: Any provider supported by [Gluetun](https://github.com/qdm12/gluetun-wiki). NordVPN, ProtonVPN, Surfshark, Mullvad, and many more.

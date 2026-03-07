@@ -1,0 +1,72 @@
+# ==========================================
+# MEGASTACK - Tailscale Module
+# Zero-config mesh VPN
+# Access services from anywhere
+# ==========================================
+
+x-megastack:
+  id: tailscale
+  title: "Tailscale"
+  tagline: "Zero-config mesh VPN"
+  description: "Access all your MegaStack services from anywhere without port forwarding, dynamic DNS, or firewall rules. Tailscale creates a secure mesh network between your devices using WireGuard under the hood. Share access with family or friends by sharing nodes on your tailnet."
+  icon: "link"
+  category: "network"
+  required: false
+  ram: "~50MB"
+  tips:
+    before_install: "You'll need a Tailscale account and an auth key. Get one at https://login.tailscale.com/admin/settings/keys"
+  env_vars:
+    TS_AUTHKEY:
+      label: "Tailscale Auth Key"
+      type: "password"
+      prompt: "Enter your Tailscale auth key. Get one from the Tailscale admin console at https://login.tailscale.com/admin/settings/keys — use a reusable key if you want the container to reconnect automatically after restarts."
+      config_editable: true
+      dangerous: false
+  services:
+    tailscale:
+      friendly_name: "Tailscale"
+      description: "Zero-config mesh VPN — access your services from anywhere without port forwarding"
+
+networks:
+  ms_proxy:
+    external: true
+
+services:
+  # --- Tailscale ---
+  # Zero-config mesh VPN for secure remote access
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: ms-tailscale
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--advertise-exit-node --accept-routes
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ${MS_ROOT:-/opt/megastack}/modules/tailscale/config/tailscale:/var/lib/tailscale
+    networks:
+      - ms_proxy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status --json | grep -q 'Self'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
